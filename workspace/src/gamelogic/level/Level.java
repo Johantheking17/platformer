@@ -196,11 +196,63 @@ public class Level {
 	//#############################################################################################################
 	//Your code goes here! 
 	//Please make sure you read the rubric/directions carefully and implement the solution recursively!
-	private void water(int col, int row, Map map, int fullness) {
-		
-	}
+	
+	//precondition: there is a map and a flower is hit
+	//postcondition: There is a flow of water coming from the flower
 
+	    private void water(int col, int row, Map map, int fullness) {
+        // If the current tile is already water and the existing water is the same or fuller, return
+        if (map.getTiles()[col][row] instanceof Water) {
+            Water existingWater = (Water) map.getTiles()[col][row];
+            if (existingWater.getFullness() >= fullness) return;
+        }
 
+        // Determine the appropriate water image based on fullness
+        String imageName;
+        switch (fullness) {
+            case 3:
+                imageName = "Full_water";
+                break;
+            case 2:
+                imageName = "Half_water";
+                break;
+            case 1:
+                imageName = "Quarter_water";
+                break;
+            default:
+                imageName = "Falling_water";
+                break;
+        }
+
+        // Create and add the water block to the map
+        Water w = new Water(col, row, tileSize, tileset.getImage(imageName), this, fullness);
+        map.addTile(col, row, w);
+
+        // Check if water can flow down
+        if (row + 1 < map.getTiles()[col].length && !(map.getTiles()[col][row + 1] instanceof Water) && !map.getTiles()[col][row + 1].isSolid()) {
+            water(col, row + 1, map, 0); // Flow down as falling water
+        } else if (fullness == 0 && row + 1 < map.getTiles()[col].length && map.getTiles()[col][row + 1].isSolid()) {
+            // If falling water reaches a flat platform, turn into full water block and spread
+            map.addTile(col, row, new Water(col, row, tileSize, tileset.getImage("Full_water"), this, 3));
+            // Spread as a full water block
+            spreadAsFullWater(col, row, map, 3);
+        } else {
+            // If water can't flow down, it should flow left and right
+            spreadAsFullWater(col, row, map, fullness);
+        }
+    }
+
+    private void spreadAsFullWater(int col, int row, Map map, int fullness) {
+        // Flow left
+        if (col - 1 >= 0 && !(map.getTiles()[col - 1][row] instanceof Water) && !map.getTiles()[col - 1][row].isSolid()) {
+            water(col - 1, row, map, fullness > 1 ? fullness - 1 : 1);
+        }
+
+        // Flow right
+        if (col + 1 < map.getTiles().length && !(map.getTiles()[col + 1][row] instanceof Water) && !map.getTiles()[col + 1][row].isSolid()) {
+            water(col + 1, row, map, fullness > 1 ? fullness - 1 : 1);
+        }
+    }
 
 	public void draw(Graphics g) {
 		g.translate((int) -camera.getX(), (int) -camera.getY());
